@@ -1,0 +1,23 @@
+project Flash_Player is
+
+   for Source_Dirs use (".\**");
+   for Object_Dir use "obj";
+   for Main use ("Player.adb");
+
+   package Ide is
+      for Documentation_Dir use "doc";
+   end Ide;
+
+   package Builder is
+      for Default_Switches ("ada") use ("-j3");
+   end Builder;
+
+   package Compiler is
+      for Default_Switches ("ada") use ("-gnato", "-fstack-check", "-gnatE", "-gnatn", "-O3", "-gnat12");
+   end Compiler;
+
+   package Binder is
+   end Binder;
+
+end Flash_Player;
+

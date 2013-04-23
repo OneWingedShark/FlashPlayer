@@ -1,0 +1,10 @@
+*.bexch
+*.cswi
+*.cgpr
+*.ad?
+*.exe
+*.ali
+*.gch
+*.o
+*.h
+*.s
