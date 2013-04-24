@@ -74,21 +74,70 @@ Package SWF.Types is
     --  FLOATING POINT  --
     ----------------------
 
-    Type Half	is private;
+    Type Half;--	is private;
     SubType Real_32	is Interfaces.IEEE_Float_32;
     SubType Real_64	is Interfaces.IEEE_Float_64;
 
 
-    Function Convert( Input : Half ) Return Float;
-    Function Convert( Input : Float ) Return Half;
+    Function Convert( Input : Half ) Return Real_32;
+    Function Convert( Input : Real_32 ) Return Half;
+--      Function Convert( Input : Half ) Return Real_64;
+--      Function Convert( Input : Real_64 ) Return Half;
+
+
+    Package IEEE_754_Constants is
+	F64_Positive_Infinity : constant Real_64;
+	F64_Positive_Zero     : constant Real_64;
+	F64_Negative_Infinity : constant Real_64;
+	F64_Negative_Zero     : constant Real_64;
+	F64_Not_a_Number      : constant Real_64;
+
+	F32_Positive_Infinity : constant Real_32;
+	F32_Positive_Zero     : constant Real_32;
+	F32_Negative_Infinity : constant Real_32;
+	F32_Negative_Zero     : constant Real_32;
+	F32_Not_a_Number      : constant Real_32;
+
+    Private
+	Use Type Real_32, Real_64;
+
+	-- Values from http://rosettacode.org/wiki/Extreme_floating_point_values
+	Function Zero  Return Real_32 is ( 0.0 );
+	Function PInf  Return Real_32 is (1.0 / Zero);
+	Function NInf  Return Real_32 is (-PInf);
+	Function PZero Return Real_32 is (1.0 / PInf);
+	Function NZero Return Real_32 is (1.0 / NInf);
+	Function NaN   Return Real_32 is (0.0 / Zero);
+
+	Function Zero  Return Real_64 is ( 0.0 );
+	Function PInf  Return Real_64 is (1.0 / Zero);
+	Function NInf  Return Real_64 is (-PInf);
+	Function PZero Return Real_64 is (1.0 / PInf);
+	Function NZero Return Real_64 is (1.0 / NInf);
+	Function NaN   Return Real_64 is (0.0 / Zero);
+
+
+	F64_Positive_Infinity : constant Real_64:= PInf;
+	F64_Positive_Zero     : constant Real_64:= PZero;
+	F64_Negative_Infinity : constant Real_64:= NInf;
+	F64_Negative_Zero     : constant Real_64:= NZero;
+	F64_Not_a_Number      : constant Real_64:= NaN;
+
+	F32_Positive_Infinity : constant Real_32:= PInf;
+	F32_Positive_Zero     : constant Real_32:= PZero;
+	F32_Negative_Infinity : constant Real_32:= NInf;
+	F32_Negative_Zero     : constant Real_32:= NZero;
+	F32_Not_a_Number      : constant Real_32:= NaN;
+    End IEEE_754_Constants;
 
 
 
 --      Type Fixed is;
 
-Private
+--Private
     Type Exponent_Type is mod 2**5 with Size => 5;
-    Type Mantissa_Type is range -2**9..2**9-1;
+    Type Mantissa_Type is range  0..2**10-1 with Size => 10;
+      -- -2**9..2**9-1 with Size => 10;
 
     type Half is record
 	Sign	: Boolean;
@@ -96,22 +145,39 @@ Private
 	Mantissa: Mantissa_Type;
     end record
     with Pack, Size => 16;
+PRIVATE
+    Use IEEE_754_Constants;
+    Use Type Real_32, Real_64;
 
     -- TODO:	Need to implement Float/Half conversion.
-    Function Convert( Input : Half ) Return Float is
+    -- Conversion Refrences:
+    --	http://galfar.vevb.net/wp/2011/16bit-half-float-in-pascaldelphi/
+    --	https://en.wikipedia.org/wiki/Half-precision_floating-point_format
+    Function Convert( Input : Half ) Return Real_32 is
       (case Input.Exp is
-       when 2#00000# => -- Denormalized
-	 (if Input.Exp = 0 and Input.Mantissa = 0 then
-		2.1
+       when 2#00000# =>			-- Denormalized Values
+	 (if Input.Mantissa /= 0 then
+		 (if Input.Sign then -1.0 else 1.0)
+	       * 2.0**Integer(-14)
+	       * Real_32(Real_32(Input.Mantissa) / 1024.0)
+		-- Result := Power(-1, Sign) * Power(2, -14) * (Mantissa / 1024)
+	  elsif Input.Sign then
+		F32_Negative_Zero
 	  else
-		1.2
+		F32_Positive_Zero
 	  ),
-       when 2#11111# => 3.0,
---         	(if Input.Sign then -1.0 else 1.0) * 2.0**Natural(Input.Exp-15) * Float(Input.Mantissa),
-       when 2#00001# .. 2#11110# => Standard.Float(3)
+       when 2#11111# =>			-- Infinities & NaN
+	 (if Input.Mantissa /= 0 then F32_Not_a_Number
+	  elsif Input.Sign then F32_Negative_Infinity else F32_Positive_Infinity
+	 ),
+       when 2#00001# .. 2#11110# =>	-- Normalized value
+	 (if Input.Sign then -1.0 else 1.0)
+       * 2.0**Natural(Input.Exp-15)
+       * Real_32(1.0+(Real_32(Input.Mantissa) / 1024.0))
+	 -- Result := Power(-1, Sign) * Power(2, Exp-15) * (1 + Mantissa / 1024)
       );
 
-    Function Convert( Input : Float ) Return Half is
+    Function Convert( Input : Real_32 ) Return Half is
       ( others => <> );
 
 
