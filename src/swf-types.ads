@@ -177,8 +177,19 @@ PRIVATE
 	 -- Result := Power(-1, Sign) * Power(2, Exp-15) * (1 + Mantissa / 1024)
       );
 
+     Function Get_Exp( Input : Real_32 ) Return Exponent_Type is
+	( if (Input > 65504.0) then 2#11111#
+       else 2#01010#
+       );
+
     Function Convert( Input : Real_32 ) Return Half is
-      ( others => <> );
+      (if	Input = F32_Positive_Infinity then (False, 2#11111#, 16#000#)
+	elsif	Input = F32_Negative_Infinity then (True , 2#11111#, 16#000#)
+	elsif	Input = F32_Positive_Zero     then (False, 2#00000#, 16#000#)
+	elsif	Input = F32_Negative_Zero     then (True,  2#00000#, 16#000#)
+	elsif	Input = F32_Not_a_Number      then (True,  2#11111#, 16#3FF#)
+       else ( Input < 0.0, Get_Exp(Input) - 127 + 15, 123)
+      );
 
 
 End SWF.Types;
