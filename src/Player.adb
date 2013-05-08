@@ -92,7 +92,7 @@ Procedure Player is
 
     Package MIO is new Ada.Text_IO.Integer_IO( K );
 
-	Test_Half : SWF.Types.Half:= (False, 2#00000#, 2#1111111111#);
+	Test_Half : SWF.Types.Half:= (False, 2#00011#, 2#1111111111#);
 
     NAN_TEST : SWF.Types.Real_32:= SWF.Types.Real_32'Value("0");
 
@@ -129,5 +129,5 @@ Begin
     Ada.Text_IO.Put_Line( "Y`:" & Image(Y) );
 
     Ada.Text_IO.Put_Line( "Conv:" &ASCII.HT&
-			   SWF.Types.Convert(Test_Half)'img );
+			   SWF.Types.Convert( SWF.Types.Convert(100.0) )'img );
 End Player;

@@ -74,7 +74,7 @@ Package SWF.Types is
     --  FLOATING POINT  --
     ----------------------
 
-    Type Half;--	is private;
+    Type Half;--		is private;
     SubType Real_32	is Interfaces.IEEE_Float_32;
     SubType Real_64	is Interfaces.IEEE_Float_64;
 
@@ -145,51 +145,6 @@ Package SWF.Types is
 	Mantissa: Mantissa_Type;
     end record
     with Pack, Size => 16;
+
 PRIVATE
-    Use IEEE_754_Constants;
-    Use Type Real_32, Real_64;
-
-    -- TODO:	Need to implement Float/Half conversion.
-    -- Conversion Refrences:
-    --	http://galfar.vevb.net/wp/2011/16bit-half-float-in-pascaldelphi/
-    --	https://en.wikipedia.org/wiki/Half-precision_floating-point_format
-    Function Convert( Input : Half ) Return Real_32 is
-      (case Input.Exp is
-       when 2#00000# =>			-- Denormalized Values
-	 (if Input.Mantissa /= 0 then
-		 (if Input.Sign then -1.0 else 1.0)
-	       * 2.0**Integer(-14)
-	       * Real_32(Real_32(Input.Mantissa) / 1024.0)
-		-- Result := Power(-1, Sign) * Power(2, -14) * (Mantissa / 1024)
-	  elsif Input.Sign then
-		F32_Negative_Zero
-	  else
-		F32_Positive_Zero
-	  ),
-       when 2#11111# =>			-- Infinities & NaN
-	 (if Input.Mantissa /= 0 then F32_Not_a_Number
-	  elsif Input.Sign then F32_Negative_Infinity else F32_Positive_Infinity
-	 ),
-       when 2#00001# .. 2#11110# =>	-- Normalized value
-	 (if Input.Sign then -1.0 else 1.0)
-       * 2.0**Natural(Input.Exp-15)
-       * Real_32(1.0+(Real_32(Input.Mantissa) / 1024.0))
-	 -- Result := Power(-1, Sign) * Power(2, Exp-15) * (1 + Mantissa / 1024)
-      );
-
-     Function Get_Exp( Input : Real_32 ) Return Exponent_Type is
-	( if (Input > 65504.0) then 2#11111#
-       else 2#01010#
-       );
-
-    Function Convert( Input : Real_32 ) Return Half is
-      (if	Input = F32_Positive_Infinity then (False, 2#11111#, 16#000#)
-	elsif	Input = F32_Negative_Infinity then (True , 2#11111#, 16#000#)
-	elsif	Input = F32_Positive_Zero     then (False, 2#00000#, 16#000#)
-	elsif	Input = F32_Negative_Zero     then (True,  2#00000#, 16#000#)
-	elsif	Input = F32_Not_a_Number      then (True,  2#11111#, 16#3FF#)
-       else ( Input < 0.0, Get_Exp(Input) - 127 + 15, 123)
-      );
-
-
 End SWF.Types;
